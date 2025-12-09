@@ -4,10 +4,14 @@ spring:
       on-profile: dev
   devtools:
     add-properties: true
+  datasource:
+    url: jdbc:mysql://${DATABASE_HOST:localhost}:${DATABASE_PORT:3307}/shopapp
+    username: ${DATABASE_USERNAME:root}
+    password: ${DATABASE_PASSWORD:root}
   jpa:
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQLDialect   # hoặc MySQL8Dialect tùy version
     show-sql: true
     hibernate:
       ddl-auto: none
@@ -17,6 +21,7 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
 open-api:
   service:
     api-docs: shopapp-service
