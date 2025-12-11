@@ -3,12 +3,13 @@ package vn.dungjava.service;
 import vn.dungjava.controller.request.UserCreationRequest;
 import vn.dungjava.controller.request.UserPasswordRequest;
 import vn.dungjava.controller.request.UserUpdateRequest;
+import vn.dungjava.controller.response.UserPageResponse;
 import vn.dungjava.controller.response.UserResponse;
 
 import java.util.List;
 
 public interface UserService {
-    List<UserResponse> findAll(String keyword, String sort, int page, int pageSize);
+    UserPageResponse findAll(String keyword, String sort, int page, int pageSize);
 
     UserResponse findById(Long id);
 

@@ -33,7 +33,7 @@ public class UserController {
         return ApiResponse.builder()
                 .status(HttpStatus.OK.value())
                 .message("user")
-                .data("")
+                .data(userService.findAll(keyword, sort, page, size))
                 .build();
     }
 
