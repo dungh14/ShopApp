@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.dungjava.controller.request.UserCreationRequest;
 import vn.dungjava.controller.request.UserPasswordRequest;
@@ -19,6 +20,8 @@ import vn.dungjava.service.UserService;
 @RequestMapping("/user")
 @Tag(name = "User Controller")
 @Slf4j(topic = "USER_CONTROLLER")
+@Validated
+@RequiredArgsConstructor
 public class UserController {
 
     @Autowired

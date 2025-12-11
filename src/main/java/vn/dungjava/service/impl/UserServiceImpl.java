@@ -170,6 +170,8 @@ public class UserServiceImpl implements UserService {
 
         if(req.getPassword().equals(req.getConfirmPassword())) {
             user.setPassword(passwordEncoder.encode(req.getPassword()));
+        } else {
+            throw new InvalidDataException("Passwords do not match");
         }
         userRepository.save(user);
         log.info("Updated Password for user: {}", req.getId());
