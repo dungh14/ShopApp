@@ -2,6 +2,7 @@ package vn.dungjava.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,10 @@ import vn.dungjava.controller.request.UserCreationRequest;
 import vn.dungjava.controller.request.UserPasswordRequest;
 import vn.dungjava.controller.request.UserUpdateRequest;
 import vn.dungjava.controller.response.ApiResponse;
+import vn.dungjava.service.EmailVerificationTokenService;
 import vn.dungjava.service.UserService;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/user")
@@ -26,6 +30,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    private final EmailVerificationTokenService tokenService;
+
 
     @GetMapping("/list")
     public ApiResponse getListUser(@RequestParam(required = false) String keyword,
@@ -54,7 +61,7 @@ public class UserController {
 
     @Operation(summary = "Create user", description = "API add new user to db")
     @PostMapping("/add")
-    public ApiResponse createUser(@RequestBody @Valid UserCreationRequest user) {
+    public ApiResponse createUser(@RequestBody @Valid UserCreationRequest user) throws IOException {
         log.info("createUser");
 
         return ApiResponse.builder()

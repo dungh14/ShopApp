@@ -16,10 +16,10 @@ spring:
     hibernate:
       ddl-auto: none
   sendgrid:
-    api-key:
+    api-key: 
     from-email: dunghoangf7.yhd@gmail.com
     templateId: d-3b9ed05e91a34c25984fd27218a632fd
-    verificationLink: http://localhost:8080/user/confirm-email
+    verificationLink: http://localhost:8081/confirm-email?secretCode=
 
 springdoc:
   api-docs:

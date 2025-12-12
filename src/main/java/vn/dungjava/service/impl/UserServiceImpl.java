@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.token.TokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,12 +21,19 @@ import vn.dungjava.controller.response.UserPageResponse;
 import vn.dungjava.controller.response.UserResponse;
 import vn.dungjava.exception.InvalidDataException;
 import vn.dungjava.exception.ResourceNotFoundException;
+import vn.dungjava.model.EmailVerificationToken;
 import vn.dungjava.model.User;
+import vn.dungjava.repository.EmailVerificationTokenRepository;
 import vn.dungjava.repository.UserRepository;
+import vn.dungjava.service.EmailService;
+import vn.dungjava.service.EmailVerificationTokenService;
 import vn.dungjava.service.UserService;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +44,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final EmailVerificationTokenService tokenService;
 
     @Override
     public UserPageResponse findAll(String keyword, String sort, int page, int pageSize) {
@@ -120,7 +130,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public long save(UserCreationRequest req) {
+    public long save(UserCreationRequest req){
         log.info("Saving User: {}", req);
 
         User userByEmail = userRepository.getByEmail(req.getEmail());
@@ -140,6 +150,14 @@ public class UserServiceImpl implements UserService {
         user.setStatus(UserStatus.NONE);
 
         userRepository.save(user);
+
+        // tạo token trong DB
+        EmailVerificationToken token = tokenService.createOrReplaceToken(user);
+
+        // gửi mail (nếu fail sẽ throw RuntimeException -> rollback cả user + token)
+        boolean sent = emailService.emailVerification(user.getEmail(), user.getUsername(), token.getToken());
+        if (!sent) log.warn("Email not sent, user created anyway. userId={}", user.getId());
+
         return user.getId();
     }
 

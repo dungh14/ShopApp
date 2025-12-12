@@ -6,6 +6,7 @@ import vn.dungjava.controller.request.UserUpdateRequest;
 import vn.dungjava.controller.response.UserPageResponse;
 import vn.dungjava.controller.response.UserResponse;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface UserService {
