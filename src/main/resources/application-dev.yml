@@ -33,3 +33,9 @@ open-api:
     server: http://localhost:${server.port}
     title: Backend service
     version: 1.0.0
+
+jwt:
+  expiryMinutes: 5
+  expiryDay: 14
+  accessKey:
+  refreshKey:
