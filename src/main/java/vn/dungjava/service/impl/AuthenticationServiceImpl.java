@@ -1,5 +1,7 @@
 package vn.dungjava.service.impl;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -11,12 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vn.dungjava.common.TokenType;
 import vn.dungjava.controller.request.SignInRequest;
+import vn.dungjava.controller.response.AuthTokens;
 import vn.dungjava.controller.response.TokenResponse;
 import vn.dungjava.exception.InvalidDataException;
 import vn.dungjava.model.User;
 import vn.dungjava.repository.UserRepository;
 import vn.dungjava.service.AuthenticationService;
 import vn.dungjava.service.JwtService;
+import vn.dungjava.service.RefreshTokenStore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +33,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
+    private final RefreshTokenStore refreshTokenStore;
 
     @Override
-    public TokenResponse getAccessToken(SignInRequest request) {
+    public AuthTokens getAccessToken(SignInRequest request) {
         log.info("getAccessToken");
 
         List<String> authorities = new ArrayList<>();
@@ -52,32 +57,68 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(request.getUsername(), authorities);
         String refreshToken = jwtService.generateRefreshToken(request.getUsername(), authorities);
 
-        return TokenResponse.builder().accessToken(accessToken).refreshToken(refreshToken).build();
+        refreshTokenStore.store(refreshToken, request.getUsername());
+
+        return new AuthTokens(accessToken, refreshToken);
     }
 
     @Override
-    public TokenResponse getRefreshToken(String refreshToken) {
+    public AuthTokens getRefreshToken(HttpServletRequest request) {
         log.info("getRefreshToken");
 
-        if(!StringUtils.isEmpty(refreshToken)) {
+        String refreshToken = readCookie(request, "refresh_token");
+
+        if(StringUtils.isEmpty(refreshToken)) {
             throw new InvalidDataException("Token is empty");
         }
         try {
             //Verify token
             String username = jwtService.extractUsername(refreshToken, TokenType.REFRESH_TOKEN);
 
+            //Check redis
+            if(!refreshTokenStore.exists(refreshToken)) {
+                throw new AccessDeniedException("Refresh token does not exist");
+            }
+
+            //rotate refresh token
+            refreshTokenStore.revoke(refreshToken);
+
             //check user is active or inactivated
-            User user = userRepository.findByUsername(username);
+            User user = userRepository.findByUsernameFetchRoles(username);
             List<String> authorities = new ArrayList<>();
             user.getAuthorities().forEach(authority -> authorities.add(authority.toString()));
 
             //generate new access token
-            String accessToken = jwtService.generateAccessToken(user.getUsername(), authorities);
+            String newAccessToken = jwtService.generateAccessToken(user.getUsername(), authorities);
+            String newRefreshToken = jwtService.generateRefreshToken(user.getUsername(), authorities);
 
-            return TokenResponse.builder().accessToken(accessToken).refreshToken(refreshToken).build();
+            refreshTokenStore.store(newRefreshToken, user.getUsername());
+
+            return new AuthTokens(newAccessToken, newRefreshToken);
         } catch (Exception e) {
             log.error("Login failed!, message: {}",e.getMessage());
             throw new AccessDeniedException(e.getMessage());
         }
+    }
+
+    @Override
+    public void logout(HttpServletRequest request) {
+        String refreshToken = readCookie(request, "refresh_token");
+        if(refreshToken != null && !refreshToken.isEmpty()) {
+            refreshTokenStore.revoke(refreshToken);
+        }
+    }
+
+    private String readCookie(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+        for (Cookie cookie : cookies) {
+            if (cookie.getName().equals(name)) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

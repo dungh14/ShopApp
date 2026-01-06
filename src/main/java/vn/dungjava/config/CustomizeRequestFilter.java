@@ -50,10 +50,11 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
                 log.info("Username {}", username);
             } catch (AccessDeniedException e) {
                 log.error("Access denied, message: {}", e.getMessage());
-                response.setStatus(HttpServletResponse.SC_OK);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
                 response.getWriter().write(ErrorResponse(request.getRequestURI(),e.getMessage()));
+                return;
             }
 
             UserDetails userDetails = userServiceDetail.userDetailsService().loadUserByUsername(username);

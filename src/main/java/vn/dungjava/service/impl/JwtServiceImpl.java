@@ -64,14 +64,15 @@ public class JwtServiceImpl implements JwtService {
         return extractClaims(type, token, Claims::getSubject);
     }
 
-    private <T> T extractClaims(TokenType type, String token, Function<Claims, T> claimsResolver)  {
+    private <T> T extractClaims(TokenType type, String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extraAllClaim(token, type);
         return claimsResolver.apply(claims);
     }
 
     private Claims extraAllClaim(String token, TokenType type) {
         try {
-            Key key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(accessKey));
+            //Key key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(accessKey));
+            Key key = getKey(type);
 
             return Jwts.parserBuilder()
                     .setSigningKey(key)
@@ -99,7 +100,7 @@ public class JwtServiceImpl implements JwtService {
                 .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * expiryDay))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * expiryDay))
                 .signWith(getKey(TokenType.REFRESH_TOKEN), SignatureAlgorithm.HS256)
                 .compact();
     }
